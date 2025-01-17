@@ -48,6 +48,23 @@ impl<'a> SplicerKind<'a> {
         splicing_manifest: &'a SplicingManifest,
         nonhermetic_root_bazel_workspace_dir: &Path,
     ) -> Result<Self> {
+        if let Some((path, manifies)) = manifests
+            .first_key_value()
+            .and_then(|(path, manifest)| manifest.workspace.as_ref().map(|_| (path, manifest)))
+        {
+            tracing::debug!("Splicing a workspace at {}", path.as_str());
+            return Ok(Self::Workspace {
+                path,
+                manifest: manifies,
+                splicing_manifest,
+            });
+        }
+
+        tracing::debug!(
+            "workspace discovery at {}",
+            nonhermetic_root_bazel_workspace_dir.display()
+        );
+
         let workspaces = discover_workspaces(
             manifests.keys().cloned().collect(),
             manifests,
